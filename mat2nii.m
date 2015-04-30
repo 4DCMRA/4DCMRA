@@ -1,2 +1,3 @@
-function mat2nii()
+function mat2nii(img,filename)
+     
 end
