@@ -27,7 +27,7 @@ Compulsory arguments:
         b: rigid + affine + deformable b-spline syn
         br: rigid + deformable b-spline syn
 --------------------------------------------------------------------------------------
-script by Yuhua Chen
+script by Yuhua Chen 5/21/2015
 --------------------------------------------------------------------------------------
 HELP
     exit 1
