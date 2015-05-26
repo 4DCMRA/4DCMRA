@@ -53,6 +53,9 @@ while getopts "h:t:i:o:s:" OPT
       t) # transform type
    TRANSFORMTYPE=$OPTARG
    ;;
+      f) # Fixed image
+   FIXEDIMAGE=$OPTARG
+   ;;
       s) # atlas size
    ATLASSIZE=$OPTARG
    ;;
