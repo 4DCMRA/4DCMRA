@@ -43,7 +43,7 @@ if [[ "$1" == "-h" || $# -eq 0 ]];
     Help >&2
   fi
 #Input Parms
-while getopts "h:t:i:o:s:" OPT
+while getopts "h:f:t:i:o:s:" OPT
   do
   case $OPT in
       h) #help
