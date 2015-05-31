@@ -52,7 +52,7 @@ if [[ "$1" == "-h" || $# -eq 0 ]];
     Help >&2
   fi
 #Input Parms
-while getopts "h:f:t:i:o:s:l:" OPT
+while getopts "h:f:t:i:o:s:l:r:" OPT
   do
   case $OPT in
       h) #help
@@ -104,24 +104,23 @@ for (( i = 1; i <=$ATLASSIZE; i++))
 	do
     #Candidates generation
   	# Registration
-    antsRegistrationSyNQuickDownSampledFactor2.sh -t "$TRANSFORMTYPE" -n 8 -d 3 -x $INPUTPATH/sumMask.nii -f $FIXEDIMAGE -m $INPUTPATH/img"$i".nii -o $OUTPUTPATH/"reg${i}"
     if [[ "$REGISTRATIONFLAG" -eq 1 ]];then
      antsRegistrationSyNQuickDownSampledFactor2.sh -t "$TRANSFORMTYPE" -n 8 -d 3 -x $INPUTPATH/sumMask.nii -f $FIXEDIMAGE -m $INPUTPATH/img"$i".nii -o $OUTPUTPATH/"reg${i}"
-      if [[ "$TRANSFORMTYPE"  == "a" ]] || [[ "$TRANSFORMTYPE" == "r" ]] || [[ "$TRANSFORMTYPE" == "t" ]];
-        then
-          # Affine Transform
-          # Transform label
-          antsApplyTransforms -d 3 -f 0  --float -i $INPUTPATH/mask"$i".nii -o $OUTPUTPATH/"cand${i}.nii" -r $FIXEDIMAGE -n NearestNeighbor  -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
-          # Transform image
-          antsApplyTransforms -d 3 -f 0 -i $INPUTPATH/img"$i".nii -o $OUTPUTPATH/img"$i".nii -r $FIXEDIMAGE -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
-        else
-          # Deformable Transform
-          # Transform label
-          antsApplyTransforms -d 3 -f 0  --float -i $INPUTPATH/mask"$i".nii -o $OUTPUTPATH/cand"$i".nii -r $FIXEDIMAGE -n NearestNeighbor  -t $OUTPUTPATH/"reg${i}"1Warp.nii.gz -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
-          # Transform image
-          antsApplyTransforms -d 3 -f 0 -i $INPUTPATH/img"$i".nii -o $OUTPUTPATH/img"$i".nii -r $FIXEDIMAGE -t $OUTPUTPATH/"reg${i}"1Warp.nii.gz -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
-      fi     
-    fi
+   fi
+    if [[ "$TRANSFORMTYPE"  == "a" ]] || [[ "$TRANSFORMTYPE" == "r" ]] || [[ "$TRANSFORMTYPE" == "t" ]];
+      then
+        # Affine Transform
+        # Transform label
+        antsApplyTransforms -d 3 -f 0  --float -i $INPUTPATH/mask"$i".nii -o $OUTPUTPATH/"cand${i}.nii" -r $FIXEDIMAGE -n NearestNeighbor  -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
+        # Transform image
+        antsApplyTransforms -d 3 -f 0 -i $INPUTPATH/img"$i".nii -o $OUTPUTPATH/img"$i".nii -r $FIXEDIMAGE -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
+      else
+        # Deformable Transform
+        # Transform label
+        antsApplyTransforms -d 3 -f 0  --float -i $INPUTPATH/mask"$i".nii -o $OUTPUTPATH/cand"$i".nii -r $FIXEDIMAGE -n NearestNeighbor  -t $OUTPUTPATH/"reg${i}"1Warp.nii.gz -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
+        # Transform image
+        antsApplyTransforms -d 3 -f 0 -i $INPUTPATH/img"$i".nii -o $OUTPUTPATH/img"$i".nii -r $FIXEDIMAGE -t $OUTPUTPATH/"reg${i}"1Warp.nii.gz -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
+    fi     
     LABLE_STR="${LABLE_STR} ${OUTPUTPATH}/cand${i}.nii"    
     ATLAS_STR="${ATLAS_STR} ${OUTPUTPATH}/img${i}.nii"    
 done
