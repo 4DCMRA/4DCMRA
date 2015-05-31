@@ -111,13 +111,13 @@ for (( i = 1; i <=$ATLASSIZE; i++))
         then
           # Affine Transform
           # Transform label
-          antsApplyTransforms -d 3 -f 0 -i $INPUTPATH/mask"$i".nii -o $OUTPUTPATH/"cand${i}.nii" -r $FIXEDIMAGE -n NearestNeighbor  -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
+          antsApplyTransforms -d 3 -f 0  --float -i $INPUTPATH/mask"$i".nii -o $OUTPUTPATH/"cand${i}.nii" -r $FIXEDIMAGE -n NearestNeighbor  -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
           # Transform image
           antsApplyTransforms -d 3 -f 0 -i $INPUTPATH/img"$i".nii -o $OUTPUTPATH/img"$i".nii -r $FIXEDIMAGE -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
         else
           # Deformable Transform
           # Transform label
-          antsApplyTransforms -d 3 -f 0 -i $INPUTPATH/mask"$i".nii -o $OUTPUTPATH/cand"$i".nii -r $FIXEDIMAGE -n NearestNeighbor  -t $OUTPUTPATH/"reg${i}"1Warp.nii.gz -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
+          antsApplyTransforms -d 3 -f 0  --float -i $INPUTPATH/mask"$i".nii -o $OUTPUTPATH/cand"$i".nii -r $FIXEDIMAGE -n NearestNeighbor  -t $OUTPUTPATH/"reg${i}"1Warp.nii.gz -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
           # Transform image
           antsApplyTransforms -d 3 -f 0 -i $INPUTPATH/img"$i".nii -o $OUTPUTPATH/img"$i".nii -r $FIXEDIMAGE -t $OUTPUTPATH/"reg${i}"1Warp.nii.gz -t $OUTPUTPATH/"reg${i}"0GenericAffine.mat
       fi     
