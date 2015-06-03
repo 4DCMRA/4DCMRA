@@ -13,6 +13,9 @@ REGISTRATIONFLAG=1
 ATLASSIZE=10
 TRANSFORMTYPE='a'
 LABELFUSION='MajorityVoting'
+USINGMASKFLAG=0
+
+#Threads
 ORIGINALNUMBEROFTHREADS=${ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS}
 ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=8
 function Help {
@@ -88,19 +91,19 @@ while getopts "h:t:i:o:s:l:r:w:" OPT
 done
 
 # Set up working directories
-if [[ -z "$OUTPUTPATH" ]];then
+if [[ -z "$OUTPUTPATH" ]]; then
   OUTPUTPATH="${INPUTPATH}/Output"
 fi
-if [[ -z "$WARPPATH" ]];then
+if [[ -z "$WARPPATH" ]]; then
   WARPPATH=$OUTPUTPATH
 fi
 
 # Make output directories
-if [[ ! -d "$OUTPUTPATH" ]];then
+if [[ ! -d $OUTPUTPATH ]]; then
   mkdir $OUTPUTPATH
   echo "${OUTPUTPATH} has been made."  
 fi
-if [[ ! -d "$WARPPATH" ]];then
+if [[ ! -d $WARPPATH ]]; then
   mkdir $WARPPATH
   echo "${WARPPATH} has been made."  
 fi
@@ -118,7 +121,11 @@ for (( target = 1; target <=$ATLASSIZE; target++ ))
          # Candidates generation
       	 # Registration
          if [[ "$REGISTRATIONFLAG" -eq 1 ]] && [[ ! -f "${WARPPATH}/reg${i}t${target}0GenericAffine.mat" ]];then
-      	   antsRegistrationSyNQuickDownSampledFactor2.sh -t "$TRANSFORMTYPE" -n 8 -d 3 -f $INPUTPATH/img"$target".nii -x $INPUTPATH/sumMask.nii -m $INPUTPATH/img"$i".nii -o $WARPPATH/"reg${i}t${target}"
+          if [[ "$USINGMASKFLAG" -eq 1 ]];then
+    	       antsRegistrationSyNQuickDownSampledFactor2.sh -t "$TRANSFORMTYPE" -n 8 -d 3 -f $INPUTPATH/img"$target".nii -x $INPUTPATH/sumMask.nii -m $INPUTPATH/img"$i".nii -o $WARPPATH/"reg${i}t${target}"
+           else
+            antsRegistrationSyNQuickDownSampledFactor2.sh -t "$TRANSFORMTYPE" -n 8 -d 3 -f $INPUTPATH/img"$target".nii -m $INPUTPATH/img"$i".nii -o $WARPPATH/"reg${i}t${target}"
+          fi
          fi
          if [[ ! -f $OUTPUTPATH/cand"$i"t"$target".nii ]] || [[ ! -f $OUTPUTPATH/img"$i"t"$target".nii ]];then
            if [[ "$TRANSFORMTYPE"  == "a" ]] || [[ "$TRANSFORMTYPE" == "r" ]] || [[ "$TRANSFORMTYPE" == "t" ]];

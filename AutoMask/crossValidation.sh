@@ -2,7 +2,7 @@
 # Cross validation
 INPUTPATH=/media/yuhuachen/Document/WorkingData/4DCMRA/MaskData
 RESPREF=voting
-ATLASSIZE=6
+ATLASSIZE=10
 TARGETIMAGE=$INPUTPATH/mask1.nii
 start_timeStamp=$(date +"%s")
 
