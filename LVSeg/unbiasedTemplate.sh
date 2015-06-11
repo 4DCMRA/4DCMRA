@@ -1,9 +1,7 @@
 #!/bin/bash
 ITERATION=5
 INPUTPATH="/media/yuhuachen/Document/WorkingData/4DCMRA/LVSegmentation/case_1253"
-OUTPUTPATH="/home/yuhuachen/WorkingData/UnbiasedTemplate1253/"
-
-mkdir $OUTPUTPATH
+OUTPUTPATH="/home/yuhuachen/WorkingData/Template1253/"
 
 NUMBEROFTHREAD=8
 TRANSFORMTYPE='s'
@@ -16,9 +14,9 @@ Usage:
 Example Case:
 `basename $0` -i /media/yuhuachen/Document/WorkingData/4DCMRA/AutoMask -t a -o temp
 Compulsory arguments:
-	 -i:  INPUT PATH: path of input images
+	   -i:  INPUT PATH: path of input images
      -o:  Output Path: path of all output files
-     -s:  Atlas Size: total number of images (default = 10)
+     -s:  Phase Number: total number of phase (default = 16)
      -r:  Registration On/Off: 1 On, 0 Off (default = 1)    
      -t:  transform type (default = 'a')
         t: translation
@@ -82,26 +80,26 @@ function ComputeAvgImage(){
 		fi		
 	done
 	#Average the images
-	AverageImages 3 ${OUTPUTPATH}/avg${1}.nii 1 ${avgImgStr}
+  AverageImages 3 ${OUTPUTPATH}/avg${1}.nii 1 ${avgImgStr}
 	# echo AverageImages 3 ${OUTPUTPATH}/avg${1}.nii 1 ${avgImgStr}
 }
+
+mkdir $OUTPUTPATH
 
 for (( i = 0; i < ITERATION; i++ ))
 do	
 	ComputeAvgImage ${i}
-	avgImage="${OUTPUTPATH}/avg${i}	.nii"
+	avgImage="${OUTPUTPATH}/avg${i}.nii"
 	#Registration to the average image
 	for (( p = 1; p <= $PHASENUMBER; p++))
 	do
 		fixedImage=$avgImage
 		prefix="${OUTPUTPATH}/reg${p}"
-	    movingImage="${INPUTPATH}/phase${p}.nii"
-	    # outputImage="${OUTPUTPATH}/phase${p}.nii"
-		regCommand="-d 3 -t ${TRANSFORMTYPE} -f ${fixedImage} -m ${movingImage} -o ${prefix} -n ${NUMBEROFTHREAD} "			    
+	  movingImage="${INPUTPATH}/phase${p}.nii"
+		regCommand="-d 3 -t ${TRANSFORMTYPE} -f ${fixedImage} -m ${movingImage} -o ${prefix} -n ${NUMBEROFTHREAD} "		
 		if [[ ${REGISTRATIONFLAG} -eq 1 ]]; then
 	    	antsRegistrationSyNPlus.sh $regCommand
-	    fi
-		# antsApplyTransforms -d 3 --float -f 0 -i $movingImage -o $outputImage -r $fixedImage -t "${prefix}1Warp.nii.gz" -t "${prefix}0GenericAffine.mat"
+    fi
 	done
 done
 ComputeAvgImage ${ITERATION}
