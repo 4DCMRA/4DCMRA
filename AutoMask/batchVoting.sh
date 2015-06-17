@@ -3,30 +3,31 @@
 # Should be called before batchVoting
 # Yuhua Chen 5/30/2015
 
+ATLASSIZE=6
+OUTPUTPATH='/home/yuhuachen/WorkingData/Atlas6wM/'
+mkdir $OUTPUTPATH
 
-OUTPUTPATH='/home/yuhuachen/WorkingData/preMask/'
-
-./autoMask.sh -o "${OUTPUTPATH}/SyN2" -r 1 -t s -l Registration
+./autoMask.sh -o "${OUTPUTPATH}/SyN2" -r 1 -t s  -l Registration -s $ATLASSIZE
 echo 'Registration done'
 
-./autoMask.sh -o "${OUTPUTPATH}/SyN2" -r 1 -t s -l MajorityVoting
+./autoMask.sh -o "${OUTPUTPATH}/SyN2" -r 1 -t s -l MajorityVoting -s $ATLASSIZE
 echo 'Voting done'
-./autoMask.sh -o "${OUTPUTPATH}/SyN2" -r 0 -t s -l JointFusion
+./autoMask.sh -o "${OUTPUTPATH}/SyN2" -r 0 -t s -l JointFusion -s $ATLASSIZE
 echo 'Joint3d done'
-./autoMask.sh -o "${OUTPUTPATH}/SyN2" -r 0 -t s -l JointFusion2D
+./autoMask.sh -o "${OUTPUTPATH}/SyN2" -r 0 -t s -l JointFusion2D -s $ATLASSIZE
 echo 'Joint2d done'
-./autoMask.sh -o "${OUTPUTPATH}/SyN2" -r 0 -t s -l STAPLE
+./autoMask.sh -o "${OUTPUTPATH}/SyN2" -r 0 -t s -l STAPLE -s $ATLASSIZE
 echo 'STAPLE done'
-./autoMask.sh -o "${OUTPUTPATH}/SyN2" -r 0 -t s -l Spatial
+./autoMask.sh -o "${OUTPUTPATH}/SyN2" -r 0 -t s -l Spatial -s $ATLASSIZE
 echo 'Spatial done'
 
-./autoMask.sh -o "${OUTPUTPATH}/Affine" -w "${OUTPUTPATH}/SyN2" -r 0 -t a -l MajorityVoting
+./autoMask.sh -o "${OUTPUTPATH}/Affine" -w "${OUTPUTPATH}/SyN2" -r 0 -t a -l MajorityVoting -s $ATLASSIZE
 echo 'Voting done'
-./autoMask.sh -o "${OUTPUTPATH}/Affine" -w "${OUTPUTPATH}/SyN2" -r 0 -t a -l JointFusion
+./autoMask.sh -o "${OUTPUTPATH}/Affine" -w "${OUTPUTPATH}/SyN2" -r 0 -t a -l JointFusion -s $ATLASSIZE
 echo 'Joint3d done'
-./autoMask.sh -o "${OUTPUTPATH}/Affine" -w "${OUTPUTPATH}/SyN2" -r 0 -t a -l JointFusion2D
+./autoMask.sh -o "${OUTPUTPATH}/Affine" -w "${OUTPUTPATH}/SyN2" -r 0 -t a -l JointFusion2D -s $ATLASSIZE
 echo 'Joint2d done'
-./autoMask.sh -o "${OUTPUTPATH}/Affine" -w "${OUTPUTPATH}/SyN2" -r 0 -t a -l STAPLE
+./autoMask.sh -o "${OUTPUTPATH}/Affine" -w "${OUTPUTPATH}/SyN2" -r 0 -t a -l STAPLE -s $ATLASSIZE
 echo 'STAPLE done'
-./autoMask.sh -o "${OUTPUTPATH}/Affine" -w "${OUTPUTPATH}/SyN2" -r 0 -t a -l Spatial
+./autoMask.sh -o "${OUTPUTPATH}/Affine" -w "${OUTPUTPATH}/SyN2" -r 0 -t a -l Spatial -s $ATLASSIZE
 echo 'Spatial done'

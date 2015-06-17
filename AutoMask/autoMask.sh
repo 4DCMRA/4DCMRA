@@ -13,11 +13,12 @@ REGISTRATIONFLAG=1
 ATLASSIZE=10
 TRANSFORMTYPE='a'
 LABELFUSION='MajorityVoting'
-USINGMASKFLAG=0
+USINGMASKFLAG=1=0
 
 #Threads
 ORIGINALNUMBEROFTHREADS=${ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS}
 ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=8
+export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS
 function Help {
     cat <<HELP
 Usage:
@@ -122,7 +123,7 @@ for (( target = 1; target <=$ATLASSIZE; target++ ))
       	 # Registration
          if [[ "$REGISTRATIONFLAG" -eq 1 ]] && [[ ! -f "${WARPPATH}/reg${i}t${target}0GenericAffine.mat" ]];then
           if [[ "$USINGMASKFLAG" -eq 1 ]];then
-    	       antsRegistrationSyNQuickDownSampledFactor2.sh -t "$TRANSFORMTYPE" -n 8 -d 3 -f $INPUTPATH/img"$target".nii -x $INPUTPATH/sumMask.nii -m $INPUTPATH/img"$i".nii -o $WARPPATH/"reg${i}t${target}"
+    	      antsRegistrationSyNQuickDownSampledFactor2.sh -t "$TRANSFORMTYPE" -n 8 -d 3 -f $INPUTPATH/img"$target".nii -x $INPUTPATH/sumMask.nii -m $INPUTPATH/img"$i".nii -o $WARPPATH/"reg${i}t${target}"
            else
             antsRegistrationSyNQuickDownSampledFactor2.sh -t "$TRANSFORMTYPE" -n 8 -d 3 -f $INPUTPATH/img"$target".nii -m $INPUTPATH/img"$i".nii -o $WARPPATH/"reg${i}t${target}"
           fi
@@ -156,11 +157,13 @@ for (( target = 1; target <=$ATLASSIZE; target++ ))
       "JointFusion")
         if [[ ! -f "${OUTPUTPATH}/joint${target}.nii" ]];then
           jointfusion 3 1 -l $LABEL_STR -g $ATLAS_STR -tg "${INPUTPATH}/img${target}.nii" "${OUTPUTPATH}/joint${target}.nii" 
+          SmoothImage 3 "${OUTPUTPATH}/joint${target}.nii" 4 "${OUTPUTPATH}/joint${target}.nii" 1 1  
         fi
         ;;
       "JointFusion2D")
         if [[ ! -f "${OUTPUTPATH}/joint2d${target}.nii" ]];then
           jointfusion 3 1 -l $LABEL_STR -g $ATLAS_STR -tg "${INPUTPATH}/img${target}.nii" -rp 2x2x1 -rs 3x3x1 "${OUTPUTPATH}/joint2d${target}.nii"
+          SmoothImage 3 "${OUTPUTPATH}/joint2d${target}.nii" 3 "${OUTPUTPATH}/joint2d${target}.nii" 1 1  
         fi
         ;;  
       "STAPLE")
@@ -174,6 +177,7 @@ for (( target = 1; target <=$ATLASSIZE; target++ ))
       "Spatial")
         if [[ ! -f "${OUTPUTPATH}/Spatial${target}".nii ]];then
           ImageMath 3 "${OUTPUTPATH}/Spatial${target}".nii CorrelationVoting "${INPUTPATH}/img${target}".nii $ALTAS_STR  $LABEL_STR
+          SmoothImage 3 "${OUTPUTPATH}/Spatial${target}.nii" 4 "${OUTPUTPATH}/Spatial${target}.nii" 1 1  
         fi
         ;;
     esac
@@ -187,3 +191,4 @@ echo "$(($diff / 60)) minutes and $(($diff % 60)) seconds elapsed."
 echo "$(($diff / 60)) minutes and $(($diff % 60)) seconds elapsed.">>"${OUTPUTPATH}/Time_${LABELFUSION}.txt"
 #ITK Threads
 ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$ORIGINALNUMBEROFTHREADS
+export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS

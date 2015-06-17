@@ -64,6 +64,7 @@ for (( i = 1; i <=$ATLASSIZE; i++))
   do
   	TARGETIMAGE="${INPUTPATH}/mask${i}.nii"
   	ImageMath 3 "${OUTPUTPATH}/Dice_${RESPREF}${i}.txt" DiceAndMinDistSum $TARGETIMAGE "${OUTPUTPATH}/${RESPREF}${i}.nii" "${OUTPUTPATH}/MinDist_${RESPREF}${i}.nii"
+    echo "${i}/${ATLASSIZE}"
 done
 
 #Timing
