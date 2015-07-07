@@ -10,14 +10,15 @@ REGISTRATIONFLAG=1
 function Help {
     cat <<HELP
 Usage:
-`basename $0` -i INPUTPATH -t TRANSFORMTYPE -o OUTPUTPATH
+`basename $0` -i INPUTPATH -t TRANSFORMTYPE -o OUTPUTPATH -e ITERATION
 Example Case:
-`basename $0` -i /media/yuhuachen/Document/WorkingData/4DCMRA/AutoMask -t a -o temp
+`basename $0` -i /media/yuhuachen/Document/WorkingData/4DCMRA/AutoMask -t a -o temp -e 5
 Compulsory arguments:
 	   -i:  INPUT PATH: path of input images
      -o:  Output Path: path of all output files
      -s:  Phase Number: total number of phase (default = 16)
      -r:  Registration On/Off: 1 On, 0 Off (default = 1)    
+     -e:  Iteration to form a template (default = 5)
      -t:  transform type (default = 'a')
         t: translation
         r: rigid
@@ -27,7 +28,7 @@ Compulsory arguments:
         b: rigid + affine + deformable b-spline syn
         br: rigid + deformable b-spline syn
 --------------------------------------------------------------------------------------
-script by Yuhua Chen 6/6/2015
+script by Yuhua Chen 6/30/2015
 --------------------------------------------------------------------------------------
 HELP
     exit 1
@@ -38,7 +39,7 @@ if [[ "$1" == "-h" || $# -eq 0 ]];
     Help >&2
   fi
 #Input Parms
-while getopts "t:h:i:o:s:r:" OPT
+while getopts "h:t:r:s:i:e:o:" OPT
   do
   case $OPT in
       h) #help
@@ -57,6 +58,9 @@ while getopts "t:h:i:o:s:r:" OPT
       i) # Input path
    INPUTPATH=$OPTARG
    ;;
+      e) # Number of iteration
+    ITERATION=$OPTARG
+    ;;
    	  o) # Output path
    OUTPUTPATH=$OPTARG
    ;;
@@ -98,7 +102,7 @@ do
 	  movingImage="${INPUTPATH}/phase${p}.nii"
 		regCommand="-d 3 -t ${TRANSFORMTYPE} -f ${fixedImage} -m ${movingImage} -o ${prefix} -n ${NUMBEROFTHREAD} "		
 		if [[ ${REGISTRATIONFLAG} -eq 1 ]]; then
-	    	antsRegistrationSyNPlus.sh $regCommand
+	    	antsRegistrationSyNQuick.sh $regCommand
     fi
 	done
 done

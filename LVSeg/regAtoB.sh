@@ -1,6 +1,6 @@
-TARGETPATH="/media/yuhuachen/Document/WorkingData/4DCMRA/LVSegmentation/case_684"
+TARGETPATH="/media/yuhuachen/Document/WorkingData/4DCMRA/LVSegmentation/case_696"
 INPUTPATH="/media/yuhuachen/Document/WorkingData/4DCMRA/LVSegmentation/case_1253"
-OUTPUTPATH="/home/yuhuachen/WorkingData/reg_1253_to_684"
+OUTPUTPATH="/home/yuhuachen/WorkingData/reg_1253_to_696"
 MASKPATH="/media/yuhuachen/Document/WorkingData/4DCMRA/LVSegmentation/case_1253/Mask/LVMask.nii"
 
 mkdir $OUTPUTPATH
