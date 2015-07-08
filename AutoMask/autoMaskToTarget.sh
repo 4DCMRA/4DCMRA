@@ -5,7 +5,7 @@ VERSION="0.0.2"
 
 start_timeStamp=$(date +"%s")
 
-INPUTPATH=/media/yuhuachen/Document/WorkingData/4DCMRA/MaskData
+INPUTPATH='/media/yuhuachen/Document/WorkingData/4DCMRA/AutoMask/MaskData' 
 ATLASSIZE=10
 REGISTRATIONFLAG=1
 FIXEDIMAGE=/media/yuhuachen/Document/WorkingData/4DCMRA/MaskData/img1.nii
@@ -94,7 +94,7 @@ fi
 
 # Make output directories
 if [[ ! -d "$OUTPUTPATH" ]];then
-  mkdir $OUTPUTPATH
+  mkdir $OUTPUTPATH -p
   echo "${OUTPUTPATH} has been made."  
 fi
 LABLE_STR=""

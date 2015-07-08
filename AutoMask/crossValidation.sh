@@ -62,8 +62,8 @@ done
 
 for (( i = 1; i <=$ATLASSIZE; i++)) 
   do
-  	TARGETIMAGE="${INPUTPATH}/mask${i}.nii"
-  	ImageMath 3 "${OUTPUTPATH}/Dice_${RESPREF}${i}.txt" DiceAndMinDistSum $TARGETIMAGE "${OUTPUTPATH}/${RESPREF}${i}.nii" "${OUTPUTPATH}/MinDist_${RESPREF}${i}.nii"
+  	TARGETIMAGE="${INPUTPATH}/label${i}.nii"
+  	ImageMath 3 "${OUTPUTPATH}/Dice_${RESPREF}${i}.txt" DiceAndMinDistSum $TARGETIMAGE "${OUTPUTPATH}/${RESPREF}${i}.nii.gz" "${OUTPUTPATH}/MinDist_${RESPREF}${i}.nii.gz"
     echo "${i}/${ATLASSIZE}"
 done
 
