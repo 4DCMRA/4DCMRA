@@ -77,11 +77,11 @@ def readGroupingCSV(filename):
 def inverseTransforms(groupId,ids):
 	global in_warp_path,iterNumber, out_seg_path
 	movingImage = in_template_path+"/Label"+str(groupId)+".nii.gz"
-	refImage = movingImage;
 
 	for p in ids:
 		print "Phase:		***	"+str(p)+" in "+str(ids)+"	***"
 		prefix=dirTempPath(groupId)+"/reg"+str(p);
+		refImage = prefix+"InverseWarped.nii.gz"
 		outputImage= out_seg_path+"/seg"+str(p)+".nii.gz"
 		cmd_trans = "antsApplyTransforms -d 3 --float -f 0 -i "+movingImage+" -o "+outputImage+" -r "+refImage+" -t "+prefix+"1InverseWarp.nii.gz -t ["+prefix+"0GenericAffine.mat,1] -n NearestNeighbor"
 		os.system(cmd_trans);
