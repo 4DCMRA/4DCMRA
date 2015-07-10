@@ -7,7 +7,7 @@ def init():
 	target_id = 1;
 	atlas_size = 5
 	rd = 5
-	iteration = 1000;
+	iteration = 500;
 	rate  = 0.2
 	rf = "2x2x2"
 	output_path = "/media/yuhuachen/Bill_500G/ProejctData/4DCMRA/LVSeg/DTLOO/Test1/Correction/Template1"
@@ -16,7 +16,7 @@ def init():
 
 
 def inputParser():
-	global ms_path,as_path,rd,iteration,rate,rf,target_id
+	global ms_path,as_path,rd,iteration,rate,rf,target_id,output_path
 	parser = argparse.ArgumentParser(description='Corrective learning and applying classifiers')
 	parser.add_argument("-t", "--target_id", type=int, help="Leave One Out test target image number.");
 	parser.add_argument("-ms","--ms_path",type=str,help="Manual segmentation path");
