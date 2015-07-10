@@ -1,6 +1,6 @@
 import sys,csv,argparse,os,time,shutil
 
-CONST_WEIGHT_THRESHOLD = 0.0001
+CONST_WEIGHT_THRESHOLD = 0.0005
 
 def init():
 	global in_volume_file,in_source_path,out_warp_path,out_template_path,phase_number,numberOfThread,transformTypes,iterNumber;

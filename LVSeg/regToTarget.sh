@@ -67,7 +67,7 @@ USINGMASKFLAG=1
 
 fixedImage=$TARGETIMG
 # outputImage="${OUTPUTPATH}/phase${p}.nii"
-for (( i = 7 ; i <= $ATLASSIZE; i++ ))
+for (( i = 1 ; i <= $ATLASSIZE; i++ ))
 do
 	prefix="${OUTPUTPATH}/reg${i}"
 	movingImage="${INPUTPATH}/img${i}.nii"
