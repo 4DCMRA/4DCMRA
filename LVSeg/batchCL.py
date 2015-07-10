@@ -30,7 +30,7 @@ def inputParser():
 	if args.ms_path != None:
 		ms_path = args.ms_path;
 	if args.as_path != None:
-		as_path != args.as_path;
+		as_path = args.as_path;
 	if args.output_path != None:
 		output_path = args.output_path;
 
