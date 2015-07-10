@@ -15,12 +15,9 @@ REGISTRATIONFLAG=1
 ATLASSIZE=10
 TRANSFORMTYPE='a'
 LABELFUSION='MajorityVoting'
-USINGMASKFLAG=0
+THREAD_NUMBER=8
+USINGMASKFLAG=1
 
-#Threads
-ORIGINALNUMBEROFTHREADS=${ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS}
-ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=8
-export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS
 function Help {
     cat <<HELP
 Usage:
@@ -32,6 +29,7 @@ Compulsory arguments:
      -o:  Output Path: path of all output files
      -s:  Atlas Size: total number of images (default = 10)
      -r:  Registration On/Off: 1 On, 0 Off (default = 1)
+     -n:  Thread to be used (default = 8)
      -l:  Label fusion: label fusion method (default = 'MajorityVoting')
         MajorityVoting: Majority voting
         JointFusion: Joint Label Fusion
@@ -58,7 +56,7 @@ if [[ "$1" == "-h" || $# -eq 0 ]];
     Help >&2
   fi
 #Input Parms
-while getopts "h:t:i:o:s:l:r:w:" OPT
+while getopts "h:t:i:o:s:l:r:w:n:" OPT
   do
   case $OPT in
       h) #help
@@ -80,7 +78,10 @@ while getopts "h:t:i:o:s:l:r:w:" OPT
       i) # Input path
    INPUTPATH=$OPTARG
    ;;
-   	  o) # Output path
+      n) # Number of threads
+   THREAD_NUMBER=$OPTARG
+   ;;
+      o) # Output path
    OUTPUTPATH=$OPTARG
    ;;
       l) # Label Fusion
@@ -125,9 +126,9 @@ for (( target = 1; target <=$ATLASSIZE; target++ ))
       	 # Registration
          if [[ "$REGISTRATIONFLAG" -eq 1 ]] && [[ ! -f "${WARPPATH}/reg${i}t${target}0GenericAffine.mat" ]];then
           if [[ "$USINGMASKFLAG" -eq 1 ]];then
-    	      ./antsRegistrationSyNPlus.sh -t "$TRANSFORMTYPE" -n 8 -d 3 -f $INPUTPATH/img"$target".nii.gz -x $INPUTPATH/mask${target}.nii.gz -m $INPUTPATH/img"$i".nii.gz -o $WARPPATH/"reg${i}t${target}"
+    	      ./antsRegistrationSyNPlus.sh -t "$TRANSFORMTYPE" -n $THREAD_NUMBER -d 3 -f $INPUTPATH/img"$target".nii -x $INPUTPATH/mask${target}.nii.gz -m $INPUTPATH/img"$i".nii -o $WARPPATH/"reg${i}t${target}"
            else
-            ./antsRegistrationSyNPlus.sh -t "$TRANSFORMTYPE" -n 8 -d 3 -f $INPUTPATH/img"$target".nii.gz -m $INPUTPATH/img"$i".nii.gz -o $WARPPATH/"reg${i}t${target}"
+            ./antsRegistrationSyNPlus.sh -t "$TRANSFORMTYPE" -n $THREAD_NUMBER -d 3 -f $INPUTPATH/img"$target".nii -m $INPUTPATH/img"$i".nii -o $WARPPATH/"reg${i}t${target}"
           fi
          fi
          if [[ ! -f ${candImg} ]] ;then
@@ -135,19 +136,19 @@ for (( target = 1; target <=$ATLASSIZE; target++ ))
             then
               # Affine Transform
               # Transform label
-              antsApplyTransforms -d 3 --float -f 0 -i $INPUTPATH/label"$i".nii.gz -o ${candImg} -r $INPUTPATH/img"$target".nii.gz -n NearestNeighbor  -t $WARPPATH/reg"$i"t"$target"0GenericAffine.mat
+              antsApplyTransforms -d 3 --float -f 0 -i $INPUTPATH/label"$i".nii -o ${candImg} -r $INPUTPATH/img"$target".nii -n NearestNeighbor  -t $WARPPATH/reg"$i"t"$target"0GenericAffine.mat
               # Transform image
-              # antsApplyTransforms -d 3 --float -f 0 -i $INPUTPATH/img"$i".nii.gz -o $OUTPUTPATH/img"$i"t"$target".nii.gz -r $INPUTPATH/img"$target".nii.gz -t $WARPPATH/reg"$i"t"$target"0GenericAffine.mat
+              # antsApplyTransforms -d 3 --float -f 0 -i $INPUTPATH/img"$i".nii -o $OUTPUTPATH/img"$i"t"$target".nii -r $INPUTPATH/img"$target".nii -t $WARPPATH/reg"$i"t"$target"0GenericAffine.mat
             else
               # Deformable Transform
               # Transform label
-              antsApplyTransforms -d 3 --float -f 0 -i $INPUTPATH/label"$i".nii.gz -o ${candImg} -r $INPUTPATH/img"$target".nii.gz -n NearestNeighbor  -t $WARPPATH/reg"$i"t"$target"1Warp.nii.gz -t $WARPPATH/reg"$i"t"$target"0GenericAffine.mat
+              antsApplyTransforms -d 3 --float -f 0 -i $INPUTPATH/label"$i".nii -o ${candImg} -r $INPUTPATH/img"$target".nii -n NearestNeighbor  -t $WARPPATH/reg"$i"t"$target"1Warp.nii.gz -t $WARPPATH/reg"$i"t"$target"0GenericAffine.mat
               # Transform image
-              # antsApplyTransforms -d 3 --float -f 0 -i $INPUTPATH/img"$i".nii.gz -o $OUTPUTPATH/img"$i"t"$target".nii.gz -r $INPUTPATH/img"$target".nii.gz -t $WARPPATH/reg"$i"t"$target"1Warp.nii.gz -t $WARPPATH/reg"$i"t"$target"0GenericAffine.mat
+              # antsApplyTransforms -d 3 --float -f 0 -i $INPUTPATH/img"$i".nii -o $OUTPUTPATH/img"$i"t"$target".nii -r $INPUTPATH/img"$target".nii -t $WARPPATH/reg"$i"t"$target"1Warp.nii.gz -t $WARPPATH/reg"$i"t"$target"0GenericAffine.mat
           fi
         fi           
         LABEL_STR="${LABEL_STR} ${candImg}  "  
-        ATLAS_STR="${ATLAS_STR} ${WARPPATH}/reg${i}t${target}Warped.nii.gz "    
+        ATLAS_STR="${ATLAS_STR} ${WARPPATH}/reg${i}t${target}Warped.nii "    
     done
     # Label Fusion
     case $LABELFUSION in
@@ -158,14 +159,14 @@ for (( target = 1; target <=$ATLASSIZE; target++ ))
         ;;
       "JointFusion")
         if [[ ! -f "${OUTPUTPATH}/joint${target}.nii.gz" ]];then
-          jointfusion 3 1 -l $LABEL_STR -g $ATLAS_STR -tg "${INPUTPATH}/img${target}.nii" -m Joint[0.1,2] -rp 2x2x2 -rs 3x3x3 -p "${OUTPUTPATH}/joint${target}_p%04d.nii.gz" "${OUTPUTPATH}/joint${target}.nii.gz" 
-          # SmoothImage 3 "${OUTPUTPATH}/joint${target}.nii.gz" 2 "${OUTPUTPATH}/joint${target}.nii.gz" 1 1  
+          jointfusion 3 1 -l $LABEL_STR -g $ATLAS_STR -tg "${INPUTPATH}/img${target}.nii" "${OUTPUTPATH}/joint${target}.nii.gz" 
+          SmoothImage 3 "${OUTPUTPATH}/joint${target}.nii.gz" 3 "${OUTPUTPATH}/joint${target}.nii.gz" 1 1  
         fi
         ;;
       "JointFusion2D")
         if [[ ! -f "${OUTPUTPATH}/joint2d${target}.nii.gz" ]];then
-          jointfusion 3 1 -l $LABEL_STR -g $ATLAS_STR -tg "${INPUTPATH}/img${target}.nii" -m Joint[0.1,2] -rp 2x2x1 -rs 3x3x1 -p "${OUTPUTPATH}/joint${target}_p%04d.nii.gz" "${OUTPUTPATH}/joint2d${target}.nii.gz"
-          # SmoothImage 3 "${OUTPUTPATH}/joint2d${target}.nii.gz" 2 "${OUTPUTPATH}/joint2d${target}.nii.gz" 1 1  
+          jointfusion 3 1 -l $LABEL_STR -g $ATLAS_STR -tg "${INPUTPATH}/img${target}.nii" -rp 2x2x1 -rs 3x3x1 "${OUTPUTPATH}/joint2d${target}.nii.gz"
+          SmoothImage 3 "${OUTPUTPATH}/joint2d${target}.nii.gz" 3 "${OUTPUTPATH}/joint2d${target}.nii.gz" 1 1  
         fi
         ;;  
       "STAPLE")
@@ -178,7 +179,7 @@ for (( target = 1; target <=$ATLASSIZE; target++ ))
         ;;
       "Spatial")
         if [[ ! -f "${OUTPUTPATH}/Spatial${target}".nii.gz ]];then
-          ImageMath 3 "${OUTPUTPATH}/Spatial${target}".nii.gz CorrelationVoting "${INPUTPATH}/img${target}".nii.gz $ALTAS_STR  $LABEL_STR
+          ImageMath 3 "${OUTPUTPATH}/Spatial${target}".nii.gz CorrelationVoting "${INPUTPATH}/img${target}".nii $ALTAS_STR  $LABEL_STR
           SmoothImage 3 "${OUTPUTPATH}/Spatial${target}.nii.gz" 4 "${OUTPUTPATH}/Spatial${target}.nii.gz" 1 1  
         fi
         ;;
@@ -192,5 +193,3 @@ echo "$(($diff / 60)) minutes and $(($diff % 60)) seconds elapsed."
 # Save timing text file.
 echo "$(($diff / 60)) minutes and $(($diff % 60)) seconds elapsed.">>"${OUTPUTPATH}/Time_${LABELFUSION}.txt"
 #ITK Threads
-ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$ORIGINALNUMBEROFTHREADS
-export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS
