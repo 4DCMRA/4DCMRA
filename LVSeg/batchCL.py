@@ -7,12 +7,13 @@ def init():
 	target_id = 1;
 	atlas_size = 5
 	rd = 5
-	iteration = 500;
+	iteration = 1000;
 	rate  = 0.2
 	rf = "2x2x2"
 	output_path = "/media/yuhuachen/Bill_500G/ProejctData/4DCMRA/LVSeg/DTLOO/Test1/Correction/Template1"
 
 	inputParser();
+	makeOutputDirs();
 
 
 def inputParser():
@@ -58,11 +59,11 @@ def makeFeatureStr(ms_path,as_path,labelId):
 		i  = index + 1;
 		if i == target_id:
 			continue;
-		f_str = f_str + " "+makeFeautrePair(ms_path,as_path,labelId,i);
+		f_str = f_str + " "+makeFeautrePair(ms_path,as_path,"000"+str(labelId),i);
 	return f_str;
 
-def makeFeautrePair(ms_path,as_path,labelId,i):
-	return ms_path+"/img"+str(i)+".nii.gz"+" "+as_path+"/joint"+str(i)+"_p000"+str(labelId)+".nii.gz"
+def makeFeautrePair(ms_path,as_path,labelStr,i):
+	return ms_path+"/img"+str(i)+".nii.gz"+" "+as_path+"/joint"+str(i)+"_p"+labelStr+".nii.gz"
 
 def BL():
 	global ms_path,as_path,rd,iteration,rate,rf,output_path,target_id
@@ -82,7 +83,7 @@ def SA():
 	output_img = output_path+"/joint_cl"+str(target_id)+".nii.gz"
 	f_str = makeFeautrePair(ms_path,as_path,"\\%04d",target_id);
 
-	cmd_str = "sa "+as_img+" "+BL_prefix+" "+output_img+" "+f_str
+	cmd_str = "sa "+as_img+" "+BL_prefix+" "+output_img+" -f "+f_str
 	os.system(cmd_str)
 
 def main():
