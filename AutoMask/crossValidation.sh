@@ -1,14 +1,14 @@
+
 #!/bin/bash
 # Cross validation
 INPUTPATH=/media/yuhuachen/Document/WorkingData/4DCMRA/MaskData
 ASPATH=/media/yuhuachen/Document/WorkingData/4DCMRA/MaskData
 RESPREF=voting
 ATLASSIZE=10
-TARGETIMAGE=$INPUTPATH/mask1.nii
 start_timeStamp=$(date +"%s")
 
 function Help {
-    cat <<HELP
+    cat <<HELP 
 Usage:
 `basename $0` -i INPUTPATH -o OUTPUTPATH
 Example Case:
@@ -25,7 +25,7 @@ Compulsory arguments:
      	Spatial: Correlation voting
      -s:  atlas size: total number of images (default = 6)
 --------------------------------------------------------------------------------------
-script by Yuhua Chen 5/26/2015
+script by Yuhua Chen 7/22/2015
 --------------------------------------------------------------------------------------
 HELP
     exit 1
@@ -55,7 +55,7 @@ while getopts "h:t:i:a:o:s:p:" OPT
       o) # Output path
    OUTPUTPATH=$OPTARG
    ;; 
-      a) # Output path
+      a) # Auto-Segmentation path
    ASPATH=$OPTARG
    ;; 
      \?) # getopts issues an error message
@@ -67,11 +67,31 @@ done
 
 mkdir $OUTPUTPATH -p
 
+echo "Image#,MYO_DIST,MYO_DICE,LV_DIST,LV_DICE,AVG_DIST,AVG_DICE,AVG_RO">"${OUTPUTPATH}/Dice.csv"
 for (( i = 1; i <=$ATLASSIZE; i++)) 
   do
+    DICE_TXT="${OUTPUTPATH}/Dice_${RESPREF}${i}.txt"
+    DICE_CSV="${DICE_TXT}.csv"
+
+    # Dice 
     echo "Calculating ${i}/${ATLASSIZE}"
   	TARGETIMAGE="${INPUTPATH}/label${i}.nii.gz"
-  	ImageMath 3 "${OUTPUTPATH}/Dice_${RESPREF}${i}.txt" DiceAndMinDistSum $TARGETIMAGE "${ASPATH}/${RESPREF}${i}.nii.gz" "${OUTPUTPATH}/MinDist_${RESPREF}${i}.nii.gz"
+  	${ANTSPATH}/ImageMath 3 ${DICE_TXT} DiceAndMinDistSum $TARGETIMAGE "${ASPATH}/${RESPREF}${i}.nii.gz" "${OUTPUTPATH}/MinDist_${RESPREF}${i}.nii.gz"
+
+    # Combine results
+    AVG_DIST=( $(cut -d ':' -f2 "${DICE_TXT}"))
+    AVG_DICE=( $(cut -d ':' -f3 "${DICE_TXT}"))
+    AVG_RO=( $(cut -d ':' -f4 "${DICE_TXT}"))
+
+    DISTANCES=( $(cut -d ',' -f2 "${DICE_CSV}"))
+    DICES=( $(cut -d ',' -f3 "${DICE_CSV}"))
+
+    MYO_DIST=${DISTANCES[1]}
+    LV_DIST=${DISTANCES[2]}
+
+    MYO_DICE=${DICES[1]}
+    LV_DICE=${DICES[2]}
+    echo "${i},${MYO_DIST},${MYO_DICE},${LV_DIST},${LV_DICE},${AVG_DIST},${AVG_DICE},${AVG_RO}">>"${OUTPUTPATH}/Dice.csv"
 done
 
 #Timing
