@@ -1,7 +1,0 @@
-#Registration
-./autoMask.sh -t s -l 'Registration' -r 1
-#Transformation
-./autoMask.sh -t s -l 'Transformation' -r 0
-
-#Joint Label Fusion
-./autoMask.sh -t s -l 'JointFusion' -r 0

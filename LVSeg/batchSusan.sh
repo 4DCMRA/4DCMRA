@@ -4,7 +4,6 @@ export FSLDIR="/hpc/apps/fsl/5.0.4/"
 
 INPUT_PATH='/hpc/home/pangjx/4DCMRA/Data/LV/Atlas/Set1/'
 OUTPUT_PATH='/hpc/home/pangjx/4DCMRA/Data/LV/N4/N4Set1/'
-MASK_PATH=''
 
 BT=35
 DT=2
@@ -22,7 +21,6 @@ Compulsory arguments:
      -r: is spatial size (sigma, i.e., half-width) of smoothing, in mm.
      -P:  Project Job Name
      -s:  atlas size: total number of images (default = 5)
-     -x:  Mask image paht
 --------------------------------------------------------------------------------------
 script by Yuhua Chen 7/15/2015
 --------------------------------------------------------------------------------------
@@ -35,7 +33,7 @@ if [[ "$1" == "-h" || $# -eq 0 ]];
     Help >&2
   fi
 #Input Parms
-while getopts "h:i:o:s:p:x:" OPT
+while getopts "h:i:o:s:p:x:r:" OPT
   do
   case $OPT in
       h) #help
@@ -76,7 +74,7 @@ do
 	for ((i = 1; i <= $ATLAS_SIZE; i++))
 	do
 		INPUT_IMG="${INPUT_PATH}/Template${t}/img${i}.nii.gz"
-		OUTPUT_PREFIX="${OUTPUT_PATH}/Template${t}/img${i}"
+		OUTPUT_PREFIX="${OUTPUT_PATH}/Template${t}/susan${i}"
 		N4CRTCMD=" ${INPUT_IMG} ${BT} ${DT} 3 1 0 ${OUTPUT_PREFIX}.nii.gz "
 
 		qsubProc "${JOB_NAME_PREFIX}_T${t}I${i}" "${FSLDIR}/bin/susan ${N4CRTCMD}"
