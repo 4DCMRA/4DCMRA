@@ -43,7 +43,6 @@ Usage:
 `basename $0` -d ImageDimension -f FixedImage -m MovingImage -o OutputPrefix
 Compulsory arguments:
      -d:  ImageDimension: 2 or 3 (for 2 or 3 dimensional registration of single volume)
-     -e:  BSpine Order
      -f:  Fixed image or source image or reference image
      -m:  Moving image or target image
      -o:  OutputPrefix: A prefix that is prepended to all output files.
@@ -89,7 +88,6 @@ Example Case:
 `basename $0` -d 3 -f fixedImage.nii.gz -m movingImage.nii.gz -o output
 Compulsory arguments:
      -d:  ImageDimension: 2 or 3 (for 2 or 3 dimensional registration of single volume)
-     -e:  BSpline order
      -f:  Fixed image or source image or reference image
      -m:  Moving image or target image
      -o:  OutputPrefix: A prefix that is prepended to all output files.
@@ -355,17 +353,17 @@ for (( i=0; i<${#SIZE[@]}; i++ ))
 #
 ##############################
 
-RIGIDCONVERGENCE="[1000x500x250x100,1e-6,10]"
+RIGIDCONVERGENCE="[1000x500x250x100,1e-3,10]"
 RIGIDSHRINKFACTORS="8x4x2x1"
 RIGIDSMOOTHINGSIGMAS="4x2x1x0vox"
 
-AFFINECONVERGENCE="[1000x500x250x100,1e-6,10]"
+AFFINECONVERGENCE="[1000x500x250x100,1e-3,10]"
 AFFINESHRINKFACTORS="8x4x2x1"
 AFFINESMOOTHINGSIGMAS="4x2x1x0vox"
 
-SYNCONVERGENCE="[1000x500x250x100x50,1e-7,10]"
-SYNSHRINKFACTORS="8x6x4x2x1"
-SYNSMOOTHINGSIGMAS="4x3x2x1x0vox"
+SYNCONVERGENCE="[1000x500,1e-4,10]"
+SYNSHRINKFACTORS="8x6"
+SYNSMOOTHINGSIGMAS="4x3vox"
 
 # if [[ $ISLARGEIMAGE -eq 1 ]];
 #   then
@@ -405,11 +403,11 @@ AFFINESTAGE="--transform Affine[0.1] \
 
 SYNMETRICS=''
 SYNMETRICS="$SYNMETRICS --metric
-      MI[${FIXEDIMAGES[0]},${MOVINGIMAGES[0]},${METRICWEIGHTS[0]},${CCRADIUS},Regular,0.5]"
+      MI[${FIXEDIMAGES[0]},${MOVINGIMAGES[0]},${METRICWEIGHTS[0]},${CCRADIUS},Regular,0.1]"
 SYNMETRICS="$SYNMETRICS --metric
-      Demons[${FIXEDIMAGES[2]},${MOVINGIMAGES[2]},${METRICWEIGHTS[1]},${CCRADIUS},Regular,0.5]"
+      Demons[${FIXEDIMAGES[2]},${MOVINGIMAGES[2]},${METRICWEIGHTS[1]},${CCRADIUS},Regular,0.1]"
 SYNMETRICS="$SYNMETRICS --metric
-      Demons[${FIXEDIMAGES[3]},${MOVINGIMAGES[3]},${METRICWEIGHTS[2]},${CCRADIUS},Regular,0.5]"
+      Demons[${FIXEDIMAGES[3]},${MOVINGIMAGES[3]},${METRICWEIGHTS[2]},${CCRADIUS},Regular,0.1]"
 
 # for(( i=1; i<${#FIXEDIMAGES[@]}; i++ ))
 #   do
@@ -505,7 +503,7 @@ echo " antsRegistration call:"
 echo "--------------------------------------------------------------------------------------"
 echo ${COMMAND}
 echo "--------------------------------------------------------------------------------------"
-${COMMAND}
+$COMMAND
 
 ###############################
 #

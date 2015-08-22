@@ -341,7 +341,7 @@ AFFINECONVERGENCE="[1000x500x250x100,1e-7,10]"
 AFFINESHRINKFACTORS="8x4x2x1"
 AFFINESMOOTHINGSIGMAS="4x2x1x0vox"
 
-SYNCONVERGENCE="[500x250x150x50,1e-8,10]"
+SYNCONVERGENCE="[500x250x150x100,1e-9,15]"
 SYNSHRINKFACTORS="8x4x2x1"
 SYNSMOOTHINGSIGMAS="2x2x1x0vox"
 
@@ -394,16 +394,16 @@ SYNSTAGE="${SYNMETRICS} \
           --shrink-factors $SYNSHRINKFACTORS \
           --smoothing-sigmas $SYNSMOOTHINGSIGMAS"
 
-if [[ $TRANSFORMTYPE == 'sr' ]] || [[ $TRANSFORMTYPE == 'br' ]];
-  then
-    SYNCONVERGENCE="[50x0,1e-6,10]"
-    SYNSHRINKFACTORS="2x1"
-    SYNSMOOTHINGSIGMAS="1x0vox"
-          SYNSTAGE="${SYNMETRICS} \
-          --convergence $SYNCONVERGENCE \
-          --shrink-factors $SYNSHRINKFACTORS \
-          --smoothing-sigmas $SYNSMOOTHINGSIGMAS"
-  fi
+# if [[ $TRANSFORMTYPE == 'sr' ]] || [[ $TRANSFORMTYPE == 'br' ]];
+#   then
+#     SYNCONVERGENCE="[50x0,1e-6,10]"
+#     SYNSHRINKFACTORS="2x1"
+#     SYNSMOOTHINGSIGMAS="1x0vox"
+#           SYNSTAGE="${SYNMETRICS} \
+#           --convergence $SYNCONVERGENCE \
+#           --shrink-factors $SYNSHRINKFACTORS \
+#           --smoothing-sigmas $SYNSMOOTHINGSIGMAS"
+#   fi
 
 if [[ $TRANSFORMTYPE == 'b' ]] || [[ $TRANSFORMTYPE == 'br' ]];
   then
@@ -415,11 +415,11 @@ if [[ $TRANSFORMTYPE == 's' ]] ;
     SYNSTAGE="--transform SyN[0.1,3,0] \
              $SYNSTAGE"
   fi
-if [[ $TRANSFORMTYPE == 'sr' ]] ;
-  then
-    SYNSTAGE="--transform SyN[0.1,3,0] \
-             $SYNSTAGE"
-  fi
+# if [[ $TRANSFORMTYPE == 'sr' ]] ;
+#   then
+#     SYNSTAGE="--transform SyN[0.1,3,0] \
+#              $SYNSTAGE"
+#   fi
 
 STAGES=''
 case "$TRANSFORMTYPE" in

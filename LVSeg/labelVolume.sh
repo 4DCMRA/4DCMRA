@@ -1,5 +1,9 @@
-INPUTPATH='/home/yuhuachen/WorkingData/InverseTrans/1253/Test3'
+if [[ -z ${ANTSPATH} ]];then
+  export ANTSPATH="/hpc/apps/ants/2.1.0-devel/bin"
+fi
 
+INPUTPATH='/home/yuhuachen/WorkingData/InverseTrans/1253/Test3'
+EXTRA_FILE=""
 PHASENUMBER=16
 
 #Input
@@ -9,6 +13,7 @@ Usage:
 `basename $0` -i INPUTDATA 
 Example Case:
 `basename $0` -i '/home/yuhuachen/WorkingData/InverseTrans/1253/Manual'
+      -e : Extra Summary file
      -i:  Input Data Path of segmentation files
      -s:  Number of Phases (Default = 16)
 --------------------------------------------------------------------------------------
@@ -23,12 +28,15 @@ if [[ "$1" == "-h" ]];
     Help >&2
   fi
 #Input Parms
-while getopts "h:i:o:s:" OPT
+while getopts "h:e:i:o:s:" OPT
   do
   case $OPT in
       h) #help
    Help
    exit 0
+   ;;
+      e) # Extra Summary File
+   EXTRA_FILE=$OPTARG
    ;;
       i) # transform type
    INPUTPATH=$OPTARG
@@ -70,6 +78,11 @@ readAllFile(){
 
 writeVolumeCSV(){
   # printf ${LV_VOLUME_ARRAY[@]} 
+  if [[ ! -z ${EXTRA_FILE} ]];then
+    echo ${INPUTPATH} >> "${EXTRA_FILE}"
+    echo ${PHASE_ID_ARRAY[@]}  >> "${EXTRA_FILE}"
+    echo ${LV_VOLUME_ARRAY[@]} >> "${EXTRA_FILE}"  
+  fi
   echo ${PHASE_ID_ARRAY[@]} > "${VOLUME_PATH}/LV_volume.csv"  
   echo ${LV_VOLUME_ARRAY[@]} >> "${VOLUME_PATH}/LV_volume.csv"
 
@@ -81,7 +94,7 @@ makePhaseVolumeCSV(){
     SEG_IMG=${INPUTPATH}/seg${i}.nii.gz
     if [[ -f $SEG_IMG ]]; then
       printf "%d/%d" $i $PHASENUMBER;
-      LabelGeometryMeasures 3 $SEG_IMG " " "${OUTPUTPATH}/csv_analysis${i}.csv"
+      ${ANTSPATH}/LabelGeometryMeasures 3 $SEG_IMG " " "${OUTPUTPATH}/csv_analysis${i}.csv"
       printf "           done\n"
     fi
   done

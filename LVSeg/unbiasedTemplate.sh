@@ -2,9 +2,9 @@
 ITERATION=5
 INPUTPATH="/media/yuhuachen/Document/WorkingData/4DCMRA/LVSegmentation/case_1253"
 OUTPUTPATH="/home/yuhuachen/WorkingData/Template1253/"
-
-NUMBEROFTHREAD=8
-TRANSFORMTYPE='s'
+REGISTRATION_SCRIPT="../RegScripts/BSyN_metric0.sh"
+NUMBEROFTHREAD=16
+TRANSFORMTYPE='b'
 PHASENUMBER=16
 REGISTRATIONFLAG=1
 function Help {
@@ -14,11 +14,11 @@ Usage:
 Example Case:
 `basename $0` -i /media/yuhuachen/Document/WorkingData/4DCMRA/AutoMask -t a -o temp -e 5
 Compulsory arguments:
+     -e:  Iteration to form a template (default = 5)
 	   -i:  INPUT PATH: path of input images
      -o:  Output Path: path of all output files
      -s:  Phase Number: total number of phase (default = 16)
      -r:  Registration On/Off: 1 On, 0 Off (default = 1)    
-     -e:  Iteration to form a template (default = 5)
      -t:  transform type (default = 'a')
         t: translation
         r: rigid
@@ -28,7 +28,7 @@ Compulsory arguments:
         b: rigid + affine + deformable b-spline syn
         br: rigid + deformable b-spline syn
 --------------------------------------------------------------------------------------
-script by Yuhua Chen 6/30/2015
+script by Yuhua Chen 8/11/2015
 --------------------------------------------------------------------------------------
 HELP
     exit 1
@@ -39,7 +39,7 @@ if [[ "$1" == "-h" || $# -eq 0 ]];
     Help >&2
   fi
 #Input Parms
-while getopts "h:t:r:s:i:e:o:" OPT
+while getopts "h:e:r:s:t:i:o:" OPT
   do
   case $OPT in
       h) #help
@@ -102,7 +102,7 @@ do
 	  movingImage="${INPUTPATH}/phase${p}.nii"
 		regCommand="-d 3 -t ${TRANSFORMTYPE} -f ${fixedImage} -m ${movingImage} -o ${prefix} -n ${NUMBEROFTHREAD} "		
 		if [[ ${REGISTRATIONFLAG} -eq 1 ]]; then
-	    	antsRegistrationSyNQuick.sh $regCommand
+	    	${REGISTRATION_SCRIPT} $regCommand
     fi
 	done
 done

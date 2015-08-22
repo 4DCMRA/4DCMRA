@@ -43,7 +43,6 @@ Usage:
 `basename $0` -d ImageDimension -f FixedImage -m MovingImage -o OutputPrefix
 Compulsory arguments:
      -d:  ImageDimension: 2 or 3 (for 2 or 3 dimensional registration of single volume)
-     -e:  BSpine Order
      -f:  Fixed image or source image or reference image
      -m:  Moving image or target image
      -o:  OutputPrefix: A prefix that is prepended to all output files.
@@ -89,7 +88,6 @@ Example Case:
 `basename $0` -d 3 -f fixedImage.nii.gz -m movingImage.nii.gz -o output
 Compulsory arguments:
      -d:  ImageDimension: 2 or 3 (for 2 or 3 dimensional registration of single volume)
-     -e:  BSpline order
      -f:  Fixed image or source image or reference image
      -m:  Moving image or target image
      -o:  OutputPrefix: A prefix that is prepended to all output files.
@@ -106,7 +104,6 @@ Optional arguments:
      -j:  use histogram matching
      -r:  histogram bins for mutual information in SyN stage (default = 32)
      -s:  spline distance for deformable B-spline SyN transform (default = 26)
-     -w: weights for metric e.g [-w 5 -w 1 -w 1] (default = 1)
      -x:  mask for the fixed image space
      -p:  precision type (default = 'd')
         f: float
@@ -211,15 +208,14 @@ FIXEDIMAGES=()
 MOVINGIMAGES=()
 OUTPUTNAME=output
 NUMBEROFTHREADS=1
-SPLINEDISTANCE=2x2x2
-SPLINEORDER=5
-TRANSFORMTYPE='b'
+SPLINEDISTANCE=26
+TRANSFORMTYPE='s'
 PRECISIONTYPE='d'
-CCRADIUS=32
+CCRADIUS=5
 MASK=0
-USEHISTOGRAMMATCHING=1
+USEHISTOGRAMMATCHING=0
 # reading command line arguments
-while getopts "d:e:f:h:m:j:n:o:p:r:s:t:w:x:" OPT
+while getopts "d:f:h:m:j:n:o:p:r:s:t:x:" OPT
   do
   case $OPT in
       h) #help
@@ -228,9 +224,6 @@ while getopts "d:e:f:h:m:j:n:o:p:r:s:t:w:x:" OPT
    ;;
       d)  # dimensions
    DIM=$OPTARG
-   ;;
-      e)  # spline order
-   SPLINEORDER=$OPTARG
    ;;
       j)  # histogram matching
    USEHISTOGRAMMATCHING=$OPTARG
@@ -258,9 +251,6 @@ while getopts "d:e:f:h:m:j:n:o:p:r:s:t:w:x:" OPT
    ;;
       s)  # spline distance
    SPLINEDISTANCE=$OPTARG
-   ;;
-      w)  # spline distance
-   METRICWEIGHTS[${#METRICWEIGHTS[@]}]=$OPTARG
    ;;
       t)  # transform type
    TRANSFORMTYPE=$OPTARG
@@ -296,18 +286,6 @@ for(( i=0; i<${#FIXEDIMAGES[@]}; i++ ))
         exit 1
       fi
   done
-
-###############################
-#
-# Metric Weights
-#
-###############################
-if [[ ! ${#METRICWEIGHTS[@]} -eq 3 ]] || [[ -z ${METRICWEIGHTS} ]];then
-  for (( i = 0; i <=2; i++))
-  do
-    METRICWEIGHTS[i]=1;
-  done
-fi
 
 ###############################
 #
@@ -355,17 +333,17 @@ for (( i=0; i<${#SIZE[@]}; i++ ))
 #
 ##############################
 
-RIGIDCONVERGENCE="[1000x500x250x100,1e-6,10]"
+RIGIDCONVERGENCE="[1000x500x250x100,1e-7,10]"
 RIGIDSHRINKFACTORS="8x4x2x1"
 RIGIDSMOOTHINGSIGMAS="4x2x1x0vox"
 
-AFFINECONVERGENCE="[1000x500x250x100,1e-6,10]"
+AFFINECONVERGENCE="[1000x500x250x100,1e-7,10]"
 AFFINESHRINKFACTORS="8x4x2x1"
 AFFINESMOOTHINGSIGMAS="4x2x1x0vox"
 
-SYNCONVERGENCE="[1000x500x250x100x50,1e-7,10]"
-SYNSHRINKFACTORS="8x6x4x2x1"
-SYNSMOOTHINGSIGMAS="4x3x2x1x0vox"
+SYNCONVERGENCE="[500x250x150x100,1e-9,15]"
+SYNSHRINKFACTORS="8x4x2x1"
+SYNSMOOTHINGSIGMAS="2x2x1x0vox"
 
 # if [[ $ISLARGEIMAGE -eq 1 ]];
 #   then
@@ -377,9 +355,9 @@ SYNSMOOTHINGSIGMAS="4x3x2x1x0vox"
 #     AFFINESHRINKFACTORS="12x8x4x2"
 #     AFFINESMOOTHINGSIGMAS="4x3x2x1vox"
 
-#     SYNCONVERGENCE="[100x100x70x50x10,1e-6,10]"
-#     SYNSHRINKFACTORS="10x6x4x2x1"
-#     SYNSMOOTHINGSIGMAS="5x3x2x1x0vox"
+#     SYNCONVERGENCE="[100x70x50x10,1e-6,10]"
+#     SYNSHRINKFACTORS="6x4x2x1"
+#     SYNSMOOTHINGSIGMAS="2x1x1x0vox"
 #   fi
 tx=Rigid
 if [[ $TRANSFORMTYPE == 't' ]] ; then
@@ -405,37 +383,31 @@ AFFINESTAGE="--transform Affine[0.1] \
 
 SYNMETRICS=''
 SYNMETRICS="$SYNMETRICS --metric
-      MI[${FIXEDIMAGES[0]},${MOVINGIMAGES[0]},${METRICWEIGHTS[0]},${CCRADIUS},Regular,0.5]"
+      MI[${FIXEDIMAGES[0]},${MOVINGIMAGES[0]},1,32,Regular,0.5]"
 SYNMETRICS="$SYNMETRICS --metric
-      Demons[${FIXEDIMAGES[2]},${MOVINGIMAGES[2]},${METRICWEIGHTS[1]},${CCRADIUS},Regular,0.5]"
+      MI[${FIXEDIMAGES[2]},${MOVINGIMAGES[2]},1,32,Regular,0.5]"
 SYNMETRICS="$SYNMETRICS --metric
-      Demons[${FIXEDIMAGES[3]},${MOVINGIMAGES[3]},${METRICWEIGHTS[2]},${CCRADIUS},Regular,0.5]"
-
-# for(( i=1; i<${#FIXEDIMAGES[@]}; i++ ))
-#   do
-#     SYNMETRICS="$SYNMETRICS --metric
-#       MI[${FIXEDIMAGES[$i]},${MOVINGIMAGES[$i]},1,${CCRADIUS},Random,0.25]"
-#   done
+      Demons[${FIXEDIMAGES[3]},${MOVINGIMAGES[3]},1,${CCRADIUS}]"
 
 SYNSTAGE="${SYNMETRICS} \
           --convergence $SYNCONVERGENCE \
           --shrink-factors $SYNSHRINKFACTORS \
           --smoothing-sigmas $SYNSMOOTHINGSIGMAS"
 
-if [[ $TRANSFORMTYPE == 'sr' ]] || [[ $TRANSFORMTYPE == 'br' ]];
-  then
-    SYNCONVERGENCE="[50x0,1e-6,10]"
-    SYNSHRINKFACTORS="2x1"
-    SYNSMOOTHINGSIGMAS="1x0vox"
-          SYNSTAGE="${SYNMETRICS} \
-          --convergence $SYNCONVERGENCE \
-          --shrink-factors $SYNSHRINKFACTORS \
-          --smoothing-sigmas $SYNSMOOTHINGSIGMAS"
-  fi
+# if [[ $TRANSFORMTYPE == 'sr' ]] || [[ $TRANSFORMTYPE == 'br' ]];
+#   then
+#     SYNCONVERGENCE="[50x0,1e-6,10]"
+#     SYNSHRINKFACTORS="2x1"
+#     SYNSMOOTHINGSIGMAS="1x0vox"
+#           SYNSTAGE="${SYNMETRICS} \
+#           --convergence $SYNCONVERGENCE \
+#           --shrink-factors $SYNSHRINKFACTORS \
+#           --smoothing-sigmas $SYNSMOOTHINGSIGMAS"
+#   fi
 
-if [[ $TRANSFORMTYPE == 'b' ]] || [[ $TRANSFORMTYPE == 'br' ]] || [[ $TRANSFORMTYPE == 'bo' ]];
+if [[ $TRANSFORMTYPE == 'b' ]] || [[ $TRANSFORMTYPE == 'br' ]];
   then
-    SYNSTAGE="--transform BSplineSyN[0.1,${SPLINEDISTANCE},0,${SPLINEORDER}] \
+    SYNSTAGE="--transform BSplineSyN[0.1,${SPLINEDISTANCE},0,3] \
              $SYNSTAGE"
   fi
 if [[ $TRANSFORMTYPE == 's' ]] ;
@@ -443,11 +415,11 @@ if [[ $TRANSFORMTYPE == 's' ]] ;
     SYNSTAGE="--transform SyN[0.1,3,0] \
              $SYNSTAGE"
   fi
-if [[ $TRANSFORMTYPE == 'sr' ]] ;
-  then
-    SYNSTAGE="--transform SyN[0.1,3,0] \
-             $SYNSTAGE"
-  fi
+# if [[ $TRANSFORMTYPE == 'sr' ]] ;
+#   then
+#     SYNSTAGE="--transform SyN[0.1,3,0] \
+#              $SYNSTAGE"
+#   fi
 
 STAGES=''
 case "$TRANSFORMTYPE" in
@@ -462,10 +434,6 @@ case "$TRANSFORMTYPE" in
   ;;
 "br" | "sr")
   STAGES="$RIGIDSTAGE  $SYNSTAGE"
-  ;;
- "bo")
-  STAGES="--initial-moving-transform [${FIXEDIMAGES[1]},${MOVINGIMAGES[1]},1]\
-    $SYNSTAGE"
   ;;
 *)
   echo "Transform type '$TRANSFORMTYPE' is not an option.  See usage: '$0 -h 1'"
@@ -505,7 +473,7 @@ echo " antsRegistration call:"
 echo "--------------------------------------------------------------------------------------"
 echo ${COMMAND}
 echo "--------------------------------------------------------------------------------------"
-${COMMAND}
+$COMMAND
 
 ###############################
 #

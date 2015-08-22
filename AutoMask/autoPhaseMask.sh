@@ -14,7 +14,7 @@ REGISTRATION_SCRIPT="../RegScripts/autoMask_metric0.sh"
 
 INPUTPATH="$ROOT_PATH/AutoMask/MaskData/"
 PROJECT_JOB_NAME="GENX_"
-CASE_ROOT_DIR="$ROOT_PATH/Cases/"
+CASE_ROOT_DIR="$ROOT_PATH/MOCO/"
 SUSAN_PATH=""
 LAPLACIAN_PATH=""
 
@@ -44,7 +44,7 @@ Compulsory arguments:
      -n:  Thread to be used (default = 8)
      -p:  Project Job Name
      -j:  Histogram Matching 0/1 (default = 0)
-     -t:  transform type (default = 'a')
+     -t:  transform type (default = 's')
         t: translation
         r: rigid
         a: rigid + affine
@@ -114,10 +114,6 @@ while getopts "h:c:t:r:w:s:i:j:u:m:n:x:p:" OPT
   esac
 done
 
-if [[ ${MASK_PATH} -eq 1 ]]; then
-  MASK_PATH=${INPUTPATH}
-fi
-
 
 function qsubProc(){
   ## 1: Job name
@@ -130,6 +126,14 @@ function qsubProcHold(){
   ## 2: commands
   qsub -cwd -j y -o "${OUTPUTPATH}" -hold_jid ${1} -N ${2} ../wrapper.sh ${3}
 }
+
+if [[ ${MASK_PATH} -eq 1 ]]; then
+  MASK_PATH=${INPUTPATH}
+else
+  if [[ ${MASK_PATH} -eq 0 ]];then
+    MASK_PATH=""
+  fi
+fi
 
 CASE_DIRS=`ls -l --time-style="long-iso" ${CASE_ROOT_DIR}  | egrep '^d' | awk '{print $8}'`
 
@@ -156,74 +160,77 @@ do
       LABEL_STR=""
 
       FIXED_IMG="${CASE_ROOT_DIR}/${CASE_DIR}/phase${target}.nii"
-      for (( i = 1; i <=$ATLASSIZE; i++)) 
-        do
-          if [[ "$target" -eq "$i" ]];then
-            continue;
-          fi
-          # Candidates generation
-          #************* Register Intensity Image ******************# 
-          REG_JOB_NAME="${REG_JOB_NAME_PREFIX}_t${target}_m${i}"
-           
-          MOVING_IMG="${INPUTPATH}/img${i}.nii"
-          MS_IMG="${INPUTPATH}/mask${i}.nii"
-          OUTPUT_PREFIX="${WARPPATH}/reg${i}t${target}"
-
-          REG_CMD=" -d 3 -t ${TRANSFORMTYPE} -n ${THREAD_NUMBER} -j ${HISTOGRAM_MATCHING} \
-           -f ${FIXED_IMG} -m ${MOVING_IMG} -o ${OUTPUT_PREFIX}"
-
-          if [[ ! -z ${MASK_PATH} ]];then
-              FIXED_MASK_IMG="${MASK_PATH}/sumMask.nii"
-              MOVING_MASK_IMG="${MASK_PATH}/mask${i}.nii"
-              REG_CMD="${REG_CMD} -x [${FIXED_MASK_IMG},${MOVING_MASK_IMG}]"
-          fi
-
-          if [[ "$REGISTRATIONFLAG" -eq 1 ]] && [[ ! -f "${OUTPUT_PREFIX}0GenericAffine.mat" ]];then
-            if [[ -z ${PRE_JOB_NAME_PREFIX} ]];then
-              qsubProc ${REG_JOB_NAME} "${REGISTRATION_SCRIPT} ${REG_CMD}" 
-            else
-              qsubProcHold "${PRE_JOB_NAME_PREFIX}*" ${REG_JOB_NAME} "${REGISTRATION_SCRIPT} ${REG_CMD}" 
+      if [[ -f ${FIXED_IMG} ]];then
+        for (( i = 1; i <=$ATLASSIZE; i++)) 
+          do
+            if [[ "$target" -eq "$i" ]];then
+              continue;
             fi
-          fi
+            # Candidates generation
+            #************* Register Intensity Image ******************# 
+            REG_JOB_NAME="${REG_JOB_NAME_PREFIX}_t${target}_m${i}"
+             
+            MOVING_IMG="${INPUTPATH}/img${i}.nii"
+            MS_IMG="${INPUTPATH}/mask${i}.nii"
+            OUTPUT_PREFIX="${WARPPATH}/reg${i}t${target}"
 
-          # ***** Translate label ***********#
-          TRAN_JOB_NAME="${TRAN_JOB_NAME_PREFIX}_t${target}_m${i}"
-          candImg="${WARPPATH}/cand${i}t${target}.nii.gz"
+            REG_CMD=" -d 3 -t ${TRANSFORMTYPE} -n ${THREAD_NUMBER} -j ${HISTOGRAM_MATCHING} \
+             -f ${FIXED_IMG} -m ${MOVING_IMG} -o ${OUTPUT_PREFIX}"
 
-          TRAN_CMD=" -d 3 --float -f 0 -r ${FIXED_IMG} "
-          if [[ "$TRANSFORMTYPE"  == "a" ]] || [[ "$TRANSFORMTYPE" == "r" ]] || [[ "$TRANSFORMTYPE" == "t" ]];
-          then
-            # Affine Transform
-            TRAN_CMD="${TRAN_CMD} -t ${OUTPUT_PREFIX}0GenericAffine.mat"
-          else
-            # Deformable Transform
-            TRAN_CMD="${TRAN_CMD} -t ${OUTPUT_PREFIX}1Warp.nii.gz -t ${OUTPUT_PREFIX}0GenericAffine.mat"
-          fi
+            if [[ ! -z ${MASK_PATH} ]];then
+                FIXED_MASK_IMG="${MASK_PATH}/sumMask.nii"
+                MOVING_MASK_IMG="${MASK_PATH}/mask${i}.nii"
+                REG_CMD="${REG_CMD} -x [${FIXED_MASK_IMG},${MOVING_MASK_IMG}]"
+            fi
 
-          # Transform labels
-          if [[ ! -f ${candImg} ]];then
-            TRAN_CMD_LABEL="${TRAN_CMD} -i ${MS_IMG} -o ${candImg} -n NearestNeighbor"
-            qsubProcHold ${REG_JOB_NAME} "${TRAN_JOB_NAME}_label" "${ANTSPATH}/antsApplyTransforms ${TRAN_CMD_LABEL}"          
-          fi  
-          LABEL_STR="${LABEL_STR} ${candImg}  "
-      # End of 10 mask atlas loop          
-      done
+            if [[ "$REGISTRATIONFLAG" -eq 1 ]] && [[ ! -f "${OUTPUT_PREFIX}0GenericAffine.mat" ]];then
+              if [[ -z ${PRE_JOB_NAME_PREFIX} ]];then
+                qsubProc ${REG_JOB_NAME} "${REGISTRATION_SCRIPT} ${REG_CMD}" 
+              else
+                qsubProcHold "${PRE_JOB_NAME_PREFIX}*" ${REG_JOB_NAME} "${REGISTRATION_SCRIPT} ${REG_CMD}" 
+              fi
+            fi
 
-      FUSION_JOB_NAME="${FUSION_JOB_NAME_PREFIX}_t${target}"
-      
-      # Label Fusion
-      SEGMENT_PREFIX=""
-      TARGET_IMG=${FIXED_SUSAN}
-      case $LABELFUSION in
-        "MajorityVoting")
-          SEGMENT_PREFIX="mask"
-          OUTPUT_MASK="${OUTPUTPATH}/${SEGMENT_PREFIX}${target}.nii.gz"
-          if [[ ! -f  ${OUTPUT_MASK} ]];then
-           qsubProcHold "${TRAN_JOB_NAME_PREFIX}_t${target}*" ${FUSION_JOB_NAME} "${ANTSPATH}/ImageMath 3 ${OUTPUT_MASK} MajorityVoting $LABEL_STR"
-          fi
-          ;;
-      esac
-      echo "${CASE_DIR}:${target}/${ATLASSIZE} Done."
+            # ***** Translate label ***********#
+            TRAN_JOB_NAME="${TRAN_JOB_NAME_PREFIX}_t${target}_m${i}"
+            candImg="${WARPPATH}/cand${i}t${target}.nii.gz"
+
+            TRAN_CMD=" -d 3 --float -f 0 -r ${FIXED_IMG} "
+            if [[ "$TRANSFORMTYPE"  == "a" ]] || [[ "$TRANSFORMTYPE" == "r" ]] || [[ "$TRANSFORMTYPE" == "t" ]];
+            then
+              # Affine Transform
+              TRAN_CMD="${TRAN_CMD} -t ${OUTPUT_PREFIX}0GenericAffine.mat"
+            else
+              # Deformable Transform
+              TRAN_CMD="${TRAN_CMD} -t ${OUTPUT_PREFIX}1Warp.nii.gz -t ${OUTPUT_PREFIX}0GenericAffine.mat"
+            fi
+
+            # Transform labels
+            if [[ ! -f ${candImg} ]];then
+              TRAN_CMD_LABEL="${TRAN_CMD} -i ${MS_IMG} -o ${candImg} -n NearestNeighbor"
+              qsubProcHold ${REG_JOB_NAME} "${TRAN_JOB_NAME}_label" "${ANTSPATH}/antsApplyTransforms ${TRAN_CMD_LABEL}"          
+            fi  
+            LABEL_STR="${LABEL_STR} ${candImg}  "
+        # End of 10 mask atlas loop          
+        done
+
+        FUSION_JOB_NAME="${FUSION_JOB_NAME_PREFIX}_t${target}"
+        
+        # Label Fusion
+        SEGMENT_PREFIX=""
+        TARGET_IMG=${FIXED_SUSAN}
+        case $LABELFUSION in
+          "MajorityVoting")
+            SEGMENT_PREFIX="mask"
+            OUTPUT_MASK="${OUTPUTPATH}/${SEGMENT_PREFIX}${target}.nii.gz"
+            if [[ ! -f  ${OUTPUT_MASK} ]];then
+             qsubProcHold "${TRAN_JOB_NAME_PREFIX}_t${target}*" ${FUSION_JOB_NAME} "${ANTSPATH}/ImageMath 3 ${OUTPUT_MASK} MajorityVoting $LABEL_STR"
+            fi
+            ;;
+        esac
+        echo "${CASE_DIR}:${target}/${ATLASSIZE} Done."
+      # End of if FIXED_IMG exists        
+      fi
   # End of 16 phases loop      
   done
   PRE_JOB_NAME_PREFIX=${FUSION_JOB_NAME_PREFIX}

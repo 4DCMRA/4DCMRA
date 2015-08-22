@@ -1,29 +1,41 @@
 #!/bin/bash
 # Leave-one-out auto masking
+if [[ -z ${ANTSPATH} ]];then
+  export ANTSPATH="/hpc/apps/ants/2.1.0-devel/bin"
+fi
 
-export ANTSPATH="/hpc/apps/ants/2.1.0-devel/bin"
 ROOT_PATH="/hpc/home/pangjx/4DCMRA/Data/LV/"
-PROJECT_JOB_NAME="P3T1"
+PROJECT_JOB_NAME="LOOS3"
 
-VERSIO="0.2.0"
+VERSIO="0.3.0"
 # Last Update:
 # June 19: Now it won't perform any operation if the output file exists to save time
 # Using .gz to save space
 # Using warped image, no need to transform twice
-#Timing
-start_timeStamp=$(date +"%s")
-REGISTRATION_SCRIPT="../antsRegistrationSyNPlusAllCC.sh"
+REGISTRATION_SCRIPT="../RegScripts/BSyN_metric0.sh"
 
-INPUTPATH="$ROOT_PATH/Atlas/Set1"
+INPUTPATH="$ROOT_PATH/Atlas/Set3/Set3"
+ATLASSIZE=5
 SUSAN_PATH=""
 LAPLACIAN_PATH=""
 
 REGISTRATIONFLAG=1
-ATLASSIZE=7
-TRANSFORMTYPE='a'
-LABELFUSION='MajorityVoting'
+INVERTRAN_FLAG=1
+
+TRANSFORMTYPE='b'
+BSPLINE_DISTANCE=20x20x20
+BSPLINE_ORDER=4
+LABELFUSION='JointFusion'
 THREAD_NUMBER=16
-HISTOGRAM_MATCHING=0
+HISTOGRAM_MATCHING=1
+MASK_PATH=1
+
+#Fusion
+JLF_MODS=1
+JLF_ALPHA=0.1
+JLF_BETA=2
+JLF_RS=3x3x3
+JLF_RP=2x2x2
 
 function Help {
     cat <<HELP
@@ -33,24 +45,29 @@ Example Case:
 `basename $0` -i /media/yuhuachen/Document/WorkingData/4DCMRA/AutoMask -t a -o temp
 Compulsory arguments:
 	   -i:  INPUT PATH: path of input images
+     -a:  Joint Fusion Alpha
+     -b:  Joint Fusion Beta
+     -c:  Joint Fusion Search Size
+     -d:  Joint Fusion Patch Size
      -o:  Output Path: path of all output files
      -s:  Atlas Size: total number of images (default = 10)
      -u:  Manual labels path (default = INPUT PATH)
+     -w:  Warp Path (Default = INPUTPATH)
      -q:  SUSAN_PATH
      -z:  LAPLACIAN_PATH
-     -x:  Mask Path: 1 to use the input path or the path of mask images, empty if no masks are applied (default = empty)
+     -x:  Mask Path: 1 to use the input path or the path of mask images, empty if no masks are applied (default = 1)
      -r:  Registration On/Off: 1 On, 0 Off (default = 1)
      -m:  Registration Scripts
-     -n:  Thread to be used (default = 8)
+     -n:  Thread to be used (default = 16)
      -p:  Project Job Name
-     -j:  Histogram Matching 0/1 (default = 0)
-     -l:  Label fusion: label fusion method (default = 'MajorityVoting')
+     -j:  Histogram Matching 0/1 (default = 1)
+     -l:  Label fusion: label fusion method (default = 'JointFusion')
         MajorityVoting: Majority voting
         JointFusion: Joint Label Fusion
         JointFusion2D: 2D Joint Label Fusion
         STAPLE:  STAPLE, AverageLabels
         Spatial: Correlation voting       
-     -t:  transform type (default = 'a')
+     -t:  transform type (default = 'b')
         t: translation
         r: rigid
         a: rigid + affine
@@ -70,13 +87,25 @@ if [[ "$1" == "-h" || $# -eq 0 ]];
     Help >&2
   fi
 #Input Parms
-while getopts "h:t:i:u:o:s:l:r:w:m:n:p:x:j:q:z:" OPT
+while getopts "h:a:b:c:d:t:i:u:o:s:l:r:w:m:n:p:x:j:q:z:" OPT
   do
   case $OPT in
       h) #help
    Help
    exit 0
    ;;
+      a) # transform type
+   JLF_ALPHA=$OPTARG
+   ;;
+      b) # transform type
+   JLF_BETA=$OPTARG
+   ;;
+      c) # transform type
+   JLF_RS=$OPTARG
+   ;;
+      d) # transform type
+   JLF_RP=$OPTARG
+   ;;      
       t) # transform type
    TRANSFORMTYPE=$OPTARG
    ;;
@@ -144,6 +173,17 @@ if [[ ${MASK_PATH} -eq 1 ]]; then
   MASK_PATH=${INPUTPATH}
 fi
 
+if [[ -z ${SUSAN_PATH} ]];then
+  if [[ -f ${INPUTPATH}/susan1.nii.gz ]];then
+    SUSAN_PATH=${INPUTPATH}
+  fi
+fi
+if [[ -z ${LAPLACIAN_PATH} ]];then
+  if [[ -f ${INPUTPATH}/lap1.nii.gz ]];then
+    LAPLACIAN_PATH=${INPUTPATH}
+  fi
+fi
+
 # Make output directories
 if [[ ! -d $OUTPUTPATH ]]; then
   mkdir $OUTPUTPATH -p
@@ -154,16 +194,17 @@ if [[ ! -d $WARPPATH ]]; then
   echo "${WARPPATH} has been made."  
 fi
 
+GRID_OUTPUTPATH="/hpc/home/pangjx/4DCMRA/Data//GridOutput/"
 function qsubProc(){
   ## 1: Job name
   ## 2: commands
-  qsub -cwd -j y -o "${OUTPUTPATH}" -N ${1} ../wrapper.sh ${2}
+  qsub -cwd -j y -o "${GRID_OUTPUTPATH}" -N ${1} ../wrapper.sh ${2}
 }
 
 function qsubProcHold(){
   ## 1: Job name
   ## 2: commands
-  qsub -cwd -j y -o "${OUTPUTPATH}" -hold_jid ${1} -N ${2} ../wrapper.sh ${3}
+  qsub -cwd -j y -o "${GRID_OUTPUTPATH}" -hold_jid ${1} -N ${2} ../wrapper.sh ${3}
 }
 
 REG_JOB_NAME_PREFIX="${PROJECT_JOB_NAME}_R"
@@ -201,6 +242,7 @@ for (( target = 1; target <=$ATLASSIZE; target++ ))
         OUTPUT_PREFIX="${WARPPATH}/reg${i}t${target}"
 
         REG_CMD=" -d 3 -t ${TRANSFORMTYPE} -n ${THREAD_NUMBER} -j ${HISTOGRAM_MATCHING} \
+         -e ${BSPLINE_ORDER} -s ${BSPLINE_DISTANCE} \
          -f ${FIXED_IMG} -m ${MOVING_IMG} -o ${OUTPUT_PREFIX}"
 
         if [[ ! -z ${MASK_PATH} ]];then
@@ -267,7 +309,9 @@ for (( target = 1; target <=$ATLASSIZE; target++ ))
               TRAN_CMD_SUSAN="${TRAN_CMD} -i ${MOVING_SUSAN} -o ${WARPED_SUSAN} -n Linear "
               qsubProcHold ${REG_JOB_NAME} "${TRAN_JOB_NAME}_susan" "${ANTSPATH}/antsApplyTransforms ${TRAN_CMD_SUSAN}"          
             fi
-            WARPED_MOD_IMGS="${WARPED_MOD_IMGS} ${WARPED_SUSAN}" 
+            if [[ ${JLF_MODS} -ge 2 ]];then
+              WARPED_MOD_IMGS="${WARPED_MOD_IMGS} ${WARPED_SUSAN}" 
+            fi
           fi
 
           # Transform Lapcian
@@ -277,16 +321,18 @@ for (( target = 1; target <=$ATLASSIZE; target++ ))
               TRAN_CMD_LAPLACIAN="${TRAN_CMD} -i ${MOVING_LAPLACIAN} -o ${WARPED_LAPLACIAN} -n Linear "
               qsubProcHold ${REG_JOB_NAME} "${TRAN_JOB_NAME}_lap" "${ANTSPATH}/antsApplyTransforms ${TRAN_CMD_LAPLACIAN}"          
             fi
-            WARPED_MOD_IMGS="${WARPED_MOD_IMGS} ${WARPED_LAPLACIAN}" 
+            if [[ ${JLF_MODS} -ge 3 ]];then
+              WARPED_MOD_IMGS="${WARPED_MOD_IMGS} ${WARPED_LAPLACIAN}" 
+            fi
           fi
     done
 
     # Target Images for JLF
     TARGET_MOD_IMGS="${TARGET_MOD_IMGS} ${FIXED_IMG}"
-    if [[ ! -z ${MOVING_SUSAN} ]]; then
+    if [[ ! -z ${MOVING_SUSAN} ]] && [[ ${JLF_MODS} -ge 2 ]]; then
       TARGET_MOD_IMGS="${TARGET_MOD_IMGS} ${FIXED_SUSAN}"
     fi
-    if [[ ! -z ${MOVING_SUSAN} ]]; then
+    if [[ ! -z ${MOVING_LAPLACIAN} ]] && [[ ${JLF_MODS} -ge 3 ]]; then
       TARGET_MOD_IMGS="${TARGET_MOD_IMGS} ${FIXED_LAPLACIAN}"
     fi
 
@@ -308,16 +354,17 @@ for (( target = 1; target <=$ATLASSIZE; target++ ))
         if [[ ! -f "${OUTPUTPATH}/${SEGMENT_PREFIX}${target}.nii.gz" ]];then
           JOINT_LABEL_CMD="-l ${LABEL_STR} -tg ${TARGET_MOD_IMGS} -g ${WARPED_MOD_IMGS} 
           -p ${OUTPUTPATH}/${SEGMENT_PREFIX}${target}p%04d.nii.gz
-          -m Joint[0.2,2]
+          -m Joint[${JLF_ALPHA},${JLF_BETA}] 
+          -rp ${JLF_RP} -rs ${JLF_RS}
           ${OUTPUTPATH}/${SEGMENT_PREFIX}${target}.nii.gz "
           
-          JOINT_LABEL_MOD=1
-          if [[ ! -z ${SUSAN_PATH} ]]; then
-            JOINT_LABEL_MOD=$((${JOINT_LABEL_MOD}+1))
-          fi
-          if [[ ! -z ${LAPLACIAN_PATH} ]]; then
-            JOINT_LABEL_MOD=$((${JOINT_LABEL_MOD}+1))
-          fi
+          JOINT_LABEL_MOD=${JLF_MODS}
+          # if [[ ! -z ${SUSAN_PATH} ]]; then
+          #   JOINT_LABEL_MOD=$((${JOINT_LABEL_MOD}+1))
+          # fi
+          # if [[ ! -z ${LAPLACIAN_PATH} ]]; then
+          #   JOINT_LABEL_MOD=$((${JOINT_LABEL_MOD}+1))
+          # fi
 
           qsubProcHold "${TRAN_JOB_NAME_PREFIX}_t${target}*" ${FUSION_JOB_NAME} "${ANTSPATH}/jointfusion 3 ${JOINT_LABEL_MOD} ${JOINT_LABEL_CMD}"
           
@@ -329,7 +376,7 @@ for (( target = 1; target <=$ATLASSIZE; target++ ))
         if [[ ! -f "${OUTPUTPATH}/${SEGMENT_PREFIX}${target}.nii.gz" ]];then
           JOINT_LABEL_CMD="-l ${LABEL_STR} -tg ${TARGET_MOD_IMGS} -g ${WARPED_MOD_IMGS} 
           -p ${OUTPUTPATH}/${SEGMENT_PREFIX}${target}p%04d.nii.gz  -rp 2x2x1 -rs 3x3x1
-          -m Joint[0.2,2]          
+          -m Joint[${JLF_ALPHA},${JLF_BETA}]          
           ${OUTPUTPATH}/${SEGMENT_PREFIX}${target}.nii.gz "
           
           JOINT_LABEL_MOD=1
@@ -369,7 +416,7 @@ done
 #Registratoin Quality
 if [[ "$REGISTRATIONFLAG" -eq 1 ]]; then
   REG_QA_JOB_NAME="${VALIDATION_JOB_NAME_PREFIX}_Candidate"
-  REG_QA_CMD="-a ${OUTPUTPATH} -i ${MS_PATH} -o ${OUTPUTPATH}/RegDice/ -s ${ATLASSIZE}"
+  REG_QA_CMD="-a ${WARPPATH} -i ${MS_PATH} -o ${WARPPATH}/RegDice/ -s ${ATLASSIZE}"
   qsubProcHold "${REG_JOB_NAME_PREFIX}*" ${REG_QA_JOB_NAME} "../AutoMask/registrationQuality.sh ${REG_QA_CMD}"
 fi
 
@@ -377,4 +424,8 @@ if [[ ! -z ${SEGMENT_PREFIX} ]]; then
   VALIDATION_JOB_NAME="${VALIDATION_JOB_NAME_PREFIX}_Seg"
   VALIDATION_CMD="-a ${OUTPUTPATH} -i ${MS_PATH} -o ${OUTPUTPATH}/Dice/ -p ${SEGMENT_PREFIX} -s ${ATLASSIZE}"
   qsubProcHold "${FUSION_JOB_NAME_PREFIX}*" ${VALIDATION_JOB_NAME} "../AutoMask/crossValidation.sh ${VALIDATION_CMD}"
+fi
+
+if [[ ${INVERTRAN_FLAG} -eq 1 ]];then
+  ../LVSeg/HPC_inverseTransform.sh ${PROJECT_JOB_NAME} ${OUTPUTPATH} ${ATLASSIZE}
 fi
